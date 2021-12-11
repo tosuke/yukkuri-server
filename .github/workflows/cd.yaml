@@ -56,6 +56,7 @@ jobs:
         run: |
           gcloud run deploy yukkuri-server \
             --image asia-northeast1-docker.pkg.dev/tosuke-apps/yukkuri-server/server:sha-${GITHUB_SHA::7} \
+            --tag ${GITHUB_REF_NAME} \
             --project tosuke-apps \
             --region asia-northeast1 \
             --allow-unauthenticated \
@@ -64,4 +65,5 @@ jobs:
             --min-instances 0 \
             --max-instances 5 \
             --concurrency 50 \
-            --timeout 300
+            --timeout 300 \
+            ${{ github.ref != 'refs/heads/main' && '--no-traffic' }}
