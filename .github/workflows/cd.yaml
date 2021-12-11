@@ -49,5 +49,19 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           secrets: |
             "AQTK1_URL=${{ secrets.AQTK1_URL }}"
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # cache-from: type=gha
+          # cache-to: type=gha,mode=max
+      
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy yukkuri-server \
+            --image asia-northeast1-docker.pkg.dev/tosuke-apps/yukkuri-server/server:sha-${GITHUB_SHA::7} \
+            --project tosuke-apps \
+            --region asia-northeast1 \
+            --allow-unauthenticated \
+            --cpu 1 \
+            --memory 512Mi \
+            --min-instances 0 \
+            --max-instances 5 \
+            --concurrency 50 \
+            --timeout 300
