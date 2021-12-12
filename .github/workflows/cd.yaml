@@ -49,8 +49,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           secrets: |
             "AQTK1_URL=${{ secrets.AQTK1_URL }}"
-          # cache-from: type=gha
-          # cache-to: type=gha,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       
       - name: Deploy to Cloud Run
         run: |
