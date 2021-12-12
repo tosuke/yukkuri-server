@@ -3,9 +3,7 @@ name: CD
 on:
   - push
 
-permissions:
-  id-token: write
-  contents: read
+permissions: write-all
 
 jobs:
   build:
@@ -15,6 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: docker/setup-buildx-action@v1
+      
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Authenticate to Google Cloud
         id: auth
@@ -29,7 +35,7 @@ jobs:
           gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
           gcloud auth configure-docker --quiet asia-northeast1-docker.pkg.dev
       
-      - name: Generate docker meta
+      - name: Generate Docker meta
         id: meta
         uses: docker/metadata-action@v3
         with:
@@ -49,8 +55,13 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           secrets: |
             "AQTK1_URL=${{ secrets.AQTK1_URL }}"
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+      
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
       
       - name: Deploy to Cloud Run
         run: |
