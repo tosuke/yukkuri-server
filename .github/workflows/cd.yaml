@@ -66,4 +66,4 @@ jobs:
             --max-instances 5 \
             --concurrency 50 \
             --timeout 300 \
-            ${{ github.ref != 'refs/heads/main' && '--no-traffic' }}
+            ${{ github.ref != 'refs/heads/main' && '--no-traffic' || '' }}
