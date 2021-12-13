@@ -1,0 +1,69 @@
+name: CD
+
+on:
+  - push
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: docker/setup-buildx-action@v1
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v0
+        with:
+          create_credentials_file: true
+          workload_identity_provider: projects/685817651360/locations/global/workloadIdentityPools/github-actions/providers/github-actions
+          service_account: github-action-runner@tosuke-apps.iam.gserviceaccount.com
+        
+      - name: gcloud
+        run: |
+          gcloud auth login --brief --cred-file="${{ steps.auth.outputs.credentials_file_path }}"
+          gcloud auth configure-docker --quiet asia-northeast1-docker.pkg.dev
+      
+      - name: Generate docker meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            asia-northeast1-docker.pkg.dev/tosuke-apps/yukkuri-server/server
+          tags: |
+            type=sha
+      
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          context: .
+          file: Dockerfile
+          target: prod
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          secrets: |
+            "AQTK1_URL=${{ secrets.AQTK1_URL }}"
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy yukkuri-server \
+            --image asia-northeast1-docker.pkg.dev/tosuke-apps/yukkuri-server/server:sha-${GITHUB_SHA::7} \
+            --tag ${GITHUB_REF_NAME} \
+            --project tosuke-apps \
+            --region asia-northeast1 \
+            --allow-unauthenticated \
+            --cpu 1 \
+            --memory 512Mi \
+            --min-instances 0 \
+            --max-instances 5 \
+            --concurrency 50 \
+            --timeout 300 \
+            ${{ github.ref != 'refs/heads/main' && '--no-traffic' }}
