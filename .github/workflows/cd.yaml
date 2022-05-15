@@ -31,7 +31,7 @@ jobs:
       
       - name: Generate docker meta
         id: meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         with:
           images: |
             asia-northeast1-docker.pkg.dev/tosuke-apps/yukkuri-server/server
