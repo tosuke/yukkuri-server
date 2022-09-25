@@ -1,3 +1,3 @@
 module github.com/tosuke/yukkuri-server
 
-go 1.17
+go 1.19
